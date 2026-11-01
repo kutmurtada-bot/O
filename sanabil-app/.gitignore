@@ -1,0 +1,6 @@
+node_modules/
+dist/
+e2e-fail.png
+flour-*backup*.json
+families-backup*.json
+*.zip

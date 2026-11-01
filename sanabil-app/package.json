@@ -1,0 +1,1 @@
+{"name":"sanabil","private":true,"type":"module","scripts":{"check":"node scripts/check.mjs","test":"node --test tests/unit.test.mjs","build":"node scripts/build.mjs","e2e":"node tests/e2e.mjs","verify":"npm run check && npm test && npm run build"},"devDependencies":{"playwright":"1.48.0"}}

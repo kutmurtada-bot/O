@@ -1,0 +1,49 @@
+name: CI-CD
+on: {push: {branches: [main]}, pull_request: {}, workflow_dispatch: {}}
+permissions: {contents: read}
+concurrency: {group: "${{ github.workflow }}-${{ github.ref }}", cancel-in-progress: true}
+jobs:
+  quality:
+    name: فحص + اختبارات + بناء
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with: {name: dist, path: dist}
+  e2e:
+    name: اختبار المتصفح (Playwright)
+    needs: quality
+    runs-on: ubuntu-latest
+    continue-on-error: true   # احذف هذا السطر بعد أول نجاح ليصبح إلزامياً
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - uses: actions/download-artifact@v4
+        with: {name: dist, path: dist}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: {name: e2e-failure, path: e2e-fail.png, if-no-files-found: ignore}
+  deploy:
+    name: نشر على GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions: {contents: read, pages: write, id-token: write}
+    environment: {name: github-pages, url: "${{ steps.d.outputs.page_url }}"}
+    steps:
+      - uses: actions/download-artifact@v4
+        with: {name: dist, path: dist}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: {path: dist}
+      - id: d
+        uses: actions/deploy-pages@v4
